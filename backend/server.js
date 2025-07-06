@@ -18,8 +18,16 @@ app.post('/analyze', async (req, res) => {
   let browser;
   try {
     browser = await puppeteer.launch({
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-gpu',
+        '--disable-dev-shm-usage',
+        '--single-process',
+      ],
+      headless: 'new',
     });
+
     const page = await browser.newPage();
 
     await page.setUserAgent(
