@@ -1,8 +1,8 @@
 // server.js
 const express = require('express');
-const puppeteer = require('puppeteer');
 const cors = require('cors');
 const path = require('path');
+const { chromium } = require('playwright');  // Playwright Chromium browser
 
 const app = express();
 app.use(cors());
@@ -17,37 +17,32 @@ app.post('/analyze', async (req, res) => {
 
   let browser;
   try {
-    browser = await puppeteer.launch({
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-gpu',
-        '--disable-dev-shm-usage',
-        '--single-process',
-      ],
-      headless: 'new',
+    browser = await chromium.launch({
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      headless: true,
     });
 
-    const page = await browser.newPage();
-
-    await page.setUserAgent(
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
-    );
+    const context = await browser.newContext();
+    const page = await context.newPage();
 
     let totalSize = 0;
     let requestCount = 0;
 
     page.on('response', async (response) => {
       try {
-        const buffer = await response.buffer();
+        const buffer = await response.body();
         totalSize += buffer.length;
         requestCount++;
-      } catch (_) { }
+      } catch (e) {
+        // ignore errors (some responses may not have body)
+      }
     });
 
     const startTime = Date.now();
-    await page.goto(url, { waitUntil: 'networkidle0', timeout: 60000 });
+    await page.goto(url, { waitUntil: 'networkidle', timeout: 60000 });
     const endTime = Date.now();
+
+    await browser.close();
 
     res.json({
       loadTime: ((endTime - startTime) / 1000).toFixed(2),
@@ -55,13 +50,12 @@ app.post('/analyze', async (req, res) => {
       requestCount,
     });
   } catch (err) {
+    if (browser) await browser.close();
     console.error('Error analyzing URL:', err);
     res.status(500).json({
       error: 'Failed to analyze URL. Some websites block automated tools or the URL might be invalid.',
       details: err.message,
     });
-  } finally {
-    if (browser) await browser.close();
   }
 });
 
