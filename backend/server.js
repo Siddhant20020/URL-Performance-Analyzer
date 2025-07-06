@@ -1,19 +1,20 @@
+// backend/server.js
 const express = require('express');
 const puppeteer = require('puppeteer');
-const cors = require('cors');
 const path = require('path');
+const cors = require('cors');
 
 const app = express();
-app.use(cors());
+
+// Only enable CORS in development
+if (process.env.NODE_ENV !== 'production') {
+  app.use(cors());
+}
+
 app.use(express.json());
 
-// Serve frontend static files
+// Serve React build files in production
 app.use(express.static(path.join(__dirname, 'public')));
-
-// React Router fallback
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
 
 app.post('/analyze', async (req, res) => {
   const { url } = req.body;
@@ -25,6 +26,7 @@ app.post('/analyze', async (req, res) => {
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
     });
     const page = await browser.newPage();
+
     await page.setUserAgent(
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
     );
@@ -37,7 +39,7 @@ app.post('/analyze', async (req, res) => {
         const buffer = await response.buffer();
         totalSize += buffer.length;
         requestCount++;
-      } catch { }
+      } catch (_) {}
     });
 
     const startTime = Date.now();
@@ -50,11 +52,19 @@ app.post('/analyze', async (req, res) => {
       requestCount,
     });
   } catch (err) {
-    console.error('Error:', err);
-    res.status(500).json({ error: 'Failed to analyze URL', details: err.message });
+    console.error('Error analyzing URL:', err);
+    res.status(500).json({
+      error: 'Failed to analyze URL. Some sites block bots or URL is invalid.',
+      details: err.message,
+    });
   } finally {
     if (browser) await browser.close();
   }
+});
+
+// Serve React app for all other routes (SPA)
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 const PORT = process.env.PORT || 5000;
