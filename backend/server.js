@@ -1,19 +1,14 @@
-// backend/server.js
+// server.js
 const express = require('express');
 const puppeteer = require('puppeteer');
-const path = require('path');
 const cors = require('cors');
+const path = require('path');
 
 const app = express();
-
-// Only enable CORS in development
-if (process.env.NODE_ENV !== 'production') {
-  app.use(cors());
-}
-
+app.use(cors());
 app.use(express.json());
 
-// Serve React build files in production
+// Serve frontend static files (built React app)
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.post('/analyze', async (req, res) => {
@@ -39,7 +34,7 @@ app.post('/analyze', async (req, res) => {
         const buffer = await response.buffer();
         totalSize += buffer.length;
         requestCount++;
-      } catch (_) {}
+      } catch (_) { }
     });
 
     const startTime = Date.now();
@@ -54,7 +49,7 @@ app.post('/analyze', async (req, res) => {
   } catch (err) {
     console.error('Error analyzing URL:', err);
     res.status(500).json({
-      error: 'Failed to analyze URL. Some sites block bots or URL is invalid.',
+      error: 'Failed to analyze URL. Some websites block automated tools or the URL might be invalid.',
       details: err.message,
     });
   } finally {
@@ -62,7 +57,7 @@ app.post('/analyze', async (req, res) => {
   }
 });
 
-// Serve React app for all other routes (SPA)
+// Serve React app for any other route (SPA support)
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });

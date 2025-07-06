@@ -6,6 +6,7 @@ export default function URLForm() {
   const [url, setUrl] = useState('');
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -23,25 +24,26 @@ export default function URLForm() {
   };
 
   return (
-    <div>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-2">
-        <input
-          type="url"
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          required
-          placeholder="Enter URL (https://example.com)"
-          className="p-2 border rounded"
-        />
-        <button
-          type="submit"
-          className="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-300 ease-in-out"
-        >
-          Analyze URL
-        </button>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <input
+        type="url"
+        placeholder="Enter URL"
+        value={url}
+        onChange={(e) => setUrl(e.target.value)}
+        required
+        className="w-full px-3 py-2 border rounded"
+      />
+      <button
+        type="submit"
+        disabled={loading}
+        className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+      >
+        {loading ? 'Analyzing...' : 'Analyze'}
+      </button>
 
-      </form>
+      {error && <p className="text-red-600">{error}</p>}
+
       {result && <ResultCard result={result} />}
-    </div>
+    </form>
   );
 }
