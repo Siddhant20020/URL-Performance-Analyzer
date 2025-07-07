@@ -14,7 +14,10 @@ app.post('/analyze', async (req, res) => {
 
   let browser;
   try {
-    browser = await chromium.launch({ headless: true });
+    browser = await chromium.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
     const page = await browser.newPage();
 
     let totalSize = 0;
@@ -25,7 +28,7 @@ app.post('/analyze', async (req, res) => {
         const buffer = await response.body();
         totalSize += buffer.length;
         requestCount++;
-      } catch (_) {}
+      } catch (_) { }
     });
 
     const startTime = Date.now();
