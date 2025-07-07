@@ -11,14 +11,18 @@ export default function URLForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);  // ✅ Clear previous error
     try {
       const { data } = await axios.post(
         `${import.meta.env.VITE_BACKEND_URL}/analyze`,
         { url }
       );
       setResult(data);
-    } catch (error) {
-      alert('Failed to analyze the URL.');
+    } catch (err) {
+      console.error(err);
+      setError(
+        err.response?.data?.error || 'Failed to analyze the URL.'
+      );
     }
     setLoading(false);
   };
@@ -42,7 +46,6 @@ export default function URLForm() {
       </button>
 
       {error && <p className="text-red-600">{error}</p>}
-
       {result && <ResultCard result={result} />}
     </form>
   );
